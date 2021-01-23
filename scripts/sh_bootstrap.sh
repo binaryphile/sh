@@ -12,22 +12,11 @@ Nl=$'\n'    # Nl is newline
 IFS=$Nl     # don't worry about quoting variable expansions except for multiline values
 
 main () {
-  local description filename rest=()
+  local filename rest=()
 
   filename=$(get_filename)
-  # check if script exists
-  while [[ -e $filename ]]; do
-    echo "[-] $filename already exists. Input a different name"
-    filename=$(get_filename)
-  done
-
-  description=$(get_description)
-  while (( ${#description} > Max_chars )); do
-    echo "[-] The description cannot exceed $Max_chars characters"
-    description=$(get_description)
-  done
-
   rest=(
+    $(get_description)
     $(get_author)
     $(get_created)
     $(get_version)
@@ -35,10 +24,24 @@ main () {
     $(get_environment)
   )
 
-  write_header $filename $description ${rest[*]}
+  write_header $filename ${rest[*]}
   # render file exec
   chmod +x $filename
   edit_file $filename
+}
+
+ask_description () {
+  local description
+
+  read -p "[+] Enter script description (max $Max_chars chars): " description
+  echo $description
+}
+
+ask_filename () {
+  local filename
+
+  read -p "[+] Enter a name for the new script: " filename
+  normalize $filename
 }
 
 edit_file () {
@@ -62,7 +65,12 @@ get_created () {
 get_description () {
   local description
 
-  read -p "[+] Enter script description (max $Max_chars chars): " description
+  description=$(ask_description)
+  while (( ${#description} > Max_chars )); do
+    echo "[-] The description cannot exceed $Max_chars characters"
+    description=$(ask_description)
+  done
+
   echo $description
 }
 
@@ -73,8 +81,14 @@ get_environment () {
 get_filename () {
   local filename
 
-  read -p "[+] Enter a name for the new script: " filename
-  normalize $filename
+  filename=$(ask_filename)
+  # check if script exists
+  while [[ -e $filename ]]; do
+    echo "[-] $filename already exists. Input a different name"
+    filename=$(ask_filename)
+  done
+
+  echo $filename
 }
 
 get_usage () {
